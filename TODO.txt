@@ -1,0 +1,16 @@
+TODO
+
+--] development 
+
+add option to only read from secondaries
+look at using mongo for intermediate results / avoiding deploying HDFS
+write output format
+
+
+--] testing
+
+test query
+test select
+test output format
+test recovery when tasktracker dies
+test recovery when a replica dies
