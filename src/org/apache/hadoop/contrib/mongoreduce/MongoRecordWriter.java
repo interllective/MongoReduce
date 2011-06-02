@@ -1,4 +1,5 @@
 package org.apache.hadoop.contrib.mongoreduce;
+
 import java.io.IOException;
 import java.net.UnknownHostException;
 
@@ -23,7 +24,9 @@ public class MongoRecordWriter extends RecordWriter<Text, DBObject> {
 	private DBCollection coll;
 	private Mongo mongo;
 
+	
 	public MongoRecordWriter(String database, String collection) throws IOException {
+	
 		
 		// connect to local mongos process
 		try {
@@ -39,7 +42,6 @@ public class MongoRecordWriter extends RecordWriter<Text, DBObject> {
 			e.printStackTrace();
 			throw new IOException(e.getMessage());
 		}
-		
 		 
 	}
 	
@@ -54,6 +56,8 @@ public class MongoRecordWriter extends RecordWriter<Text, DBObject> {
 	@Override
 	public void write(Text key, DBObject value) throws IOException,
 			InterruptedException {
+		
+		value.put("_id", key.toString()); // new ObjectId(getValidKey(key.toString())));
 		
 		coll.save(value);
 	}

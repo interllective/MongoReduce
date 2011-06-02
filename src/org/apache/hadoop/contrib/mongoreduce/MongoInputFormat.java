@@ -3,6 +3,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.InputSplit;
@@ -11,10 +12,12 @@ import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 
+import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.Mongo;
+import com.mongodb.util.JSON;
 
 
 public class MongoInputFormat extends InputFormat<Text, DBObject> {
@@ -30,7 +33,13 @@ public class MongoInputFormat extends InputFormat<Text, DBObject> {
 	@Override
 	public List<InputSplit> getSplits(JobContext context) throws IOException,
 			InterruptedException {
-				
+		
+		Configuration conf = context.getConfiguration();
+		boolean primaryOk = conf.getBoolean("mongo.input.primary_ok", false);
+		BasicDBObjectBuilder cmdBuilder = new BasicDBObjectBuilder();
+		cmdBuilder.add("isMaster", 1);
+		DBObject cmd = cmdBuilder.get();
+		
 		// connect to global mongo through a mongos process
 		Mongo m = new Mongo("localhost", 27017);
 		
@@ -50,9 +59,21 @@ public class MongoInputFormat extends InputFormat<Text, DBObject> {
 			String[] parts = hostString.split("/");
 			String[] hosts;
 			if(parts.length > 1) { // we have replica sets
-				// optionally find out which is the primary and leave it out
-				// to avoid reading from primary
 				hosts = parts[1].split(",");
+				
+				if(!primaryOk) {
+					ArrayList<String> secondaries = new ArrayList<String>();
+					
+					// determine secondaries
+					for(String host : hosts) {
+						Mongo h = new Mongo(host);
+						boolean ismaster = (Boolean)h.getDB(h.getDatabaseNames().get(0)).command(cmd).get("ismaster");
+						if(!ismaster)
+							secondaries.add(host);
+					}
+					
+					hosts = secondaries.toArray(hosts);
+				}
 			}
 			else {
 				hosts = parts[0].split(",");
@@ -70,7 +91,22 @@ public class MongoInputFormat extends InputFormat<Text, DBObject> {
 	}
 
 	public static void setCollection(Job job, String cl) {
-		job.getConfiguration().set("mongo.input.database", cl);
+		job.getConfiguration().set("mongo.input.collection", cl);
+	}
+
+	public static void setQuery(Job job, String query) {
+		// quickly validate query
+		JSON.parse(query);
+		job.getConfiguration().set("mongo.input.query", query);
+	}
+
+	public static void setSelect(Job job, String select) {
+		JSON.parse(select);
+		job.getConfiguration().set("mongo.input.select", select);
+	}
+
+	public static void setPrimaryOk(Job job, boolean b) {
+		job.getConfiguration().setBoolean("mongo.input.primary_ok", b);
 	}
 	
 }

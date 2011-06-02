@@ -1,5 +1,7 @@
 package org.apache.hadoop.contrib.mongoreduce;
+
 import java.io.IOException;
+import java.util.ArrayList;
 
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
@@ -53,5 +55,22 @@ public class MongoOutputFormat extends OutputFormat<Text, DBObject> {
 	public static void setCollection(Job job, String cl) {
 		job.getConfiguration().set("mongo.output.collection", cl);
 	}
-
+	
+	public static void dropCollection(Job job, boolean drop) {
+		job.getConfiguration().setBoolean("mongo.output.drop", drop);
+	}
+	
+	public static void setSplitPoints(Job job, ArrayList<String> points) {
+		
+		String pointString = "";
+		for(String point : points) {
+			pointString += point + "\t";
+		}
+		
+		job.getConfiguration().set("mongo.output.split_points", pointString.substring(0, pointString.length()));
+	}
+	
+	public static void skipPreSplitting(Job job, boolean skip) {
+		job.getConfiguration().setBoolean("mongo.output.skip_splitting", skip);
+	}
 }

@@ -2,15 +2,15 @@ TODO
 
 --] development 
 
-add option to only read from secondaries
+DONE:: add option to allow reading from primaries - default is secondaries if using replica sets
 look at using mongo for intermediate results / avoiding deploying HDFS
-write output format
+DONE::make output format pre-split and move chunks
 
 
 --] testing
 
 test query
-test select
-test output format
+DONE::test select
+DONE::test output format
 test recovery when tasktracker dies
 test recovery when a replica dies
