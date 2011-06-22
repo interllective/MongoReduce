@@ -69,6 +69,7 @@ public class WordCount implements Tool {
 	}
 	
 	
+	@SuppressWarnings("deprecation")
 	@Override
 	public int run(String[] args) throws Exception {
 				
@@ -101,6 +102,9 @@ public class WordCount implements Tool {
 		// use to set whether running on primary nodes is allowed - default is false
 		// note that this only has an effect if shards are replicated
 		// MongoInputFormat.setPrimaryOk(job, true);
+		
+		// used to test a MapReduce job on a non-sharded, local database
+		MongoInputFormat.setSingleTestingMode(job, true);
 		
 		// configure output parameters
 		job.setOutputFormatClass(MongoOutputFormat.class);

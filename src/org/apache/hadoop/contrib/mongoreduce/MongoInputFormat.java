@@ -1,4 +1,5 @@
 package org.apache.hadoop.contrib.mongoreduce;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,6 +36,18 @@ public class MongoInputFormat extends InputFormat<Text, DBObject> {
 			InterruptedException {
 		
 		Configuration conf = context.getConfiguration();
+		
+		ArrayList<InputSplit> splits = new ArrayList<InputSplit>();
+		
+		// in single testing mode we just hit the local db
+		boolean singleTestingMode = conf.getBoolean("mongo.single.testing", false);
+		if(singleTestingMode) {
+			String[] hosts = {"localhost:27017"};
+			splits.add(new MongoInputSplit(hosts));
+			
+			return splits;
+		}
+		
 		boolean primaryOk = conf.getBoolean("mongo.input.primary_ok", false);
 		BasicDBObjectBuilder cmdBuilder = new BasicDBObjectBuilder();
 		cmdBuilder.add("isMaster", 1);
@@ -47,7 +60,6 @@ public class MongoInputFormat extends InputFormat<Text, DBObject> {
 		DB configdb = m.getDB("config");
 		DBCollection shards = configdb.getCollection("shards");
 		
-		ArrayList<InputSplit> splits = new ArrayList<InputSplit>();
 		
 		// we need to query/read/process each shard once
 		for(DBObject shard : shards.find()) {
@@ -86,27 +98,82 @@ public class MongoInputFormat extends InputFormat<Text, DBObject> {
 		return splits;
 	}
 	
+	// TODO: add verification to these calls and fail early if a problem is found
+	
+	/**
+	 * Specifies which MongoDB database the mapper will process
+	 *  
+	 * @param job
+	 * @param db
+	 */
 	public static void setDatabase(Job job, String db) {
 		job.getConfiguration().set("mongo.input.database", db);
 	}
 
+	/**
+	 * Specifies which MongoDB collection the mapper will process
+	 * 
+	 * @param job
+	 * @param cl
+	 */
 	public static void setCollection(Job job, String cl) {
 		job.getConfiguration().set("mongo.input.collection", cl);
 	}
 
+	/**
+	 * A JSON string representing a MongoDB query to be performed by each 
+	 * MongoDB server. The matching documents are passed to Map()
+	 * 
+	 * @param job
+	 * @param query
+	 */
 	public static void setQuery(Job job, String query) {
 		// quickly validate query
 		JSON.parse(query);
 		job.getConfiguration().set("mongo.input.query", query);
 	}
 
+	/**
+	 * A JSON string representing the fields selected from documents
+	 * returned from MongoDB
+	 * 
+	 * MongoDB performs this selection before they are passed to Map()
+	 * 
+	 * @param job
+	 * @param select
+	 */
 	public static void setSelect(Job job, String select) {
 		JSON.parse(select);
 		job.getConfiguration().set("mongo.input.select", select);
 	}
 
+	/**
+	 * Allows MapReduce to read from MongoDB Primary servers
+	 * The default is false, making MapReduce read from secondaries, reducing
+	 * the load on primary servers, but potentially reading slightly stale data.
+	 * 
+	 * Without setting Primary OK to true, failovers can only occur among secondaries. 
+	 * If there is only one secondary for a given shard, and reading from that shard
+	 * fails, and primaryOK is not set, that input split will never be read.
+	 * 
+	 * PrimaryOK gives MapReduce more servers to fall back on in case of failure.
+	 * 
+	 * @param job
+	 * @param b
+	 */
 	public static void setPrimaryOk(Job job, boolean b) {
 		job.getConfiguration().setBoolean("mongo.input.primary_ok", b);
+	}
+	
+	/**
+	 * Used to tell MongoInputFormat to read from a single, local database
+	 * only for testing
+	 * 
+	 * @param job
+	 * @param s
+	 */
+	public static void setSingleTestingMode(Job job, boolean s) {
+		job.getConfiguration().setBoolean("mongo.single.testing", s);
 	}
 	
 }
