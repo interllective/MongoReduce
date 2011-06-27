@@ -1,4 +1,5 @@
 /**
+ * Copyright 2011 Interllective Inc.
  * 
  */
 package org.apache.hadoop.contrib.mongoreduce;
