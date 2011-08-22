@@ -1,6 +1,8 @@
 /**
  * Copyright 2011 Interllective Inc.
  * 
+ * This class exists to produce JSON strings from mongo to be consumed by streaming scripts
+ * 
  */
 package org.apache.hadoop.contrib.mongoreduce;
 
@@ -18,6 +20,7 @@ import com.mongodb.DBObject;
 import com.mongodb.Mongo;
 import com.mongodb.util.JSON;
 
+@SuppressWarnings("deprecation")
 public class MongoStreamRecordReader implements RecordReader<Text, Text> {
 
 	private DBCursor cursor;

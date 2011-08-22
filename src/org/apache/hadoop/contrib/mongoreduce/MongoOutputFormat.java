@@ -44,11 +44,11 @@ public class MongoOutputFormat extends OutputFormat<Text, DBObject> {
 		return new MongoRecordWriter(database, collection);
 	}
 
-	private static String getCollection(TaskAttemptContext context) {
+	public static String getCollection(TaskAttemptContext context) {
 		return context.getConfiguration().get("mongo.output.collection");
 	}
 
-	private static String getDatabase(TaskAttemptContext context) {
+	public static String getDatabase(TaskAttemptContext context) {
 		return context.getConfiguration().get("mongo.output.database");
 	}
 

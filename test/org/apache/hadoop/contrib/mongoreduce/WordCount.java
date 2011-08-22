@@ -69,7 +69,6 @@ public class WordCount implements Tool {
 	}
 	
 	
-	@SuppressWarnings("deprecation")
 	@Override
 	public int run(String[] args) throws Exception {
 				

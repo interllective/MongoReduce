@@ -1,6 +1,7 @@
 /**
  * Copyright 2011 Interllective Inc.
  * 
+ * TODO: the getSplits functionality should be consolidated with MongoInputFormat's
  */
 package org.apache.hadoop.contrib.mongoreduce;
 
@@ -29,6 +30,7 @@ import com.mongodb.Mongo;
  * @author aaron
  *
  */
+@SuppressWarnings("deprecation")
 public class MongoStreamInputFormat implements InputFormat<Text, Text>, JobConfigurable {
 
 	
