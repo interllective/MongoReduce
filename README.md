@@ -227,5 +227,11 @@ Doing a Streaming MapReduce over MongoDB is possible using the alternate input f
 
 	$HADOOP_HOME/bin/hadoop jar mapred/contrib/streaming/hadoop-0.21.0-streaming.jar  -D mongo.input.database=[your_db] -D mongo.input.collection=[your_collection] -inputformat org.apache.hadoop.contrib.mongoreduce.MongoStreamInputFormat -input /ignored -output output_dir -mapper path/to/your/mapper.py|rb 
 
-That command sends the output to HDFS. The Streaming Output Format is forthcoming.	
+That command sends the output to HDFS. To send output to MongoDB, use the following command line options:
+
+	-D mongo.output.database=[your_db] -D mongo.output.collection=[your_collection] -outputformat org.apache.hadoop.contrib.mongoreduce.MongoStreamingOutputFormat
+	
+
+
+
 

@@ -39,8 +39,15 @@ public class MongoStreamOutputFormat implements OutputFormat<Text, Text> {
 		if(conf.getBoolean("mongo.output.skip_splitting", false)) 
 			return;
 		
-		String database = conf.get("mongo.output.database");
-		String collection = conf.get("mongo.output.collection");
+		String database = conf.get("mongo.output.database", "");
+		if(database.equals("")) {
+			throw new IOException("must specify a value for mongo.output.database");
+		}
+		
+		String collection = conf.get("mongo.output.collection", "");
+		if(collection.equals("")) {
+			throw new IOException("must supply a value for mongo.output.collection");
+		}
 				
 		// connect to global db
 		Mongo m = new Mongo("localhost");
