@@ -5,6 +5,7 @@
 package org.apache.hadoop.contrib.mongoreduce;
 
 import java.io.IOException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,10 +23,68 @@ import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.Mongo;
+import com.mongodb.MongoException;
+import com.mongodb.ServerAddress;
 import com.mongodb.util.JSON;
 
 
 public class MongoInputFormat extends InputFormat<Text, DBObject> {
+
+	static DBObject cmd;
+	
+	{
+		BasicDBObjectBuilder cmdBuilder = new BasicDBObjectBuilder();
+		cmdBuilder.add("isMaster", 1);
+		cmd = cmdBuilder.get();
+	}
+	
+	
+	public static String[] hostsForShard(String shardName, boolean primaryOk) throws UnknownHostException, MongoException {
+		
+		ArrayList<String> hosts = new ArrayList<String>();
+		
+		String[] parts = shardName.split("/");
+		if(parts.length == 1) { // no replicas
+			hosts.add(shardName);
+		}
+		else { // replicas
+			
+			// get first or only host listed
+			String host = parts[1].split(",")[0];
+			Mongo h = new Mongo(host);
+			List<ServerAddress> addresses = h.getServerAddressList();
+			h.close();
+			h = null;
+			
+			// only one node in replica set ... - use it
+			if(addresses.size() == 1) {
+				ServerAddress addr = addresses.get(0);
+				hosts.add(addr.getHost() + ":" + Integer.toString(addr.getPort()));
+			}
+			
+			else {
+				for(ServerAddress addr : addresses) {
+					
+					// use secondaries and primaries
+					if(primaryOk) {
+						hosts.add(addr.getHost() + ":" + Integer.toString(addr.getPort()));
+					}
+					
+					// only use secondaries
+					else {
+						String haddr = addr.getHost() + ":" + Integer.toString(addr.getPort());
+						h = new Mongo(haddr);
+						if(!(Boolean)h.getDB(h.getDatabaseNames().get(0)).command(cmd).get("ismaster")) {
+							hosts.add(haddr);
+						}
+					}
+				}
+			}
+		}
+		
+		return hosts.toArray(new String[0]);
+	}
+
 
 	@Override
 	public RecordReader<Text, DBObject> createRecordReader(InputSplit split,
@@ -53,9 +112,7 @@ public class MongoInputFormat extends InputFormat<Text, DBObject> {
 		}
 		
 		boolean primaryOk = conf.getBoolean("mongo.input.primary_ok", false);
-		BasicDBObjectBuilder cmdBuilder = new BasicDBObjectBuilder();
-		cmdBuilder.add("isMaster", 1);
-		DBObject cmd = cmdBuilder.get();
+		
 		
 		// connect to global mongo through a mongos process
 		Mongo m = new Mongo("localhost", 27017);
@@ -70,31 +127,11 @@ public class MongoInputFormat extends InputFormat<Text, DBObject> {
 			
 			System.out.println("adding shard" + shard.toString());
 			
-			// parse addresses out
-			String hostString = (String) shard.get("host");
-			String[] parts = hostString.split("/");
-			String[] hosts;
-			if(parts.length > 1) { // we have replica sets
-				hosts = parts[1].split(",");
-				
-				if(!primaryOk) {
-					ArrayList<String> secondaries = new ArrayList<String>();
+			String[] hosts = hostsForShard((String) shard.get("host"), primaryOk);
+			for(String host : hosts) 
+				System.out.print(host + " ");
+			System.out.println();
 					
-					// determine secondaries
-					for(String host : hosts) {
-						Mongo h = new Mongo(host);
-						boolean ismaster = (Boolean)h.getDB(h.getDatabaseNames().get(0)).command(cmd).get("ismaster");
-						if(!ismaster)
-							secondaries.add(host);
-					}
-					
-					hosts = secondaries.toArray(hosts);
-				}
-			}
-			else {
-				hosts = parts[0].split(",");
-			}
-			
 			InputSplit split = new MongoInputSplit(hosts);
 			splits.add(split);
 		}
