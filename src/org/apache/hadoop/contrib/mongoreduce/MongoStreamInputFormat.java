@@ -1,7 +1,6 @@
 /**
  * Copyright 2011 Interllective Inc.
  * 
- * TODO: the getSplits functionality should be consolidated with MongoInputFormat's
  */
 package org.apache.hadoop.contrib.mongoreduce;
 
@@ -18,11 +17,11 @@ import org.apache.hadoop.mapred.JobConfigurable;
 import org.apache.hadoop.mapred.RecordReader;
 import org.apache.hadoop.mapred.Reporter;
 
-import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.Mongo;
+
 
 /** 
  * Note - this uses the old mapred classes, not mapreduce ...
@@ -34,13 +33,14 @@ import com.mongodb.Mongo;
 public class MongoStreamInputFormat implements InputFormat<Text, Text>, JobConfigurable {
 
 	
+	
 	public static class MongoStreamInputSplit implements InputSplit {
 
-		String[] locations;
+		String[] locations = new String[0];
 
 		// need this
 		public MongoStreamInputSplit() {
-			
+			locations = new String[0];
 		}
 		
 		public MongoStreamInputSplit(String[] locations) {
@@ -83,6 +83,12 @@ public class MongoStreamInputFormat implements InputFormat<Text, Text>, JobConfi
 		return new MongoStreamRecordReader(split, conf);
 	}
 
+	
+	/**
+	 * almost identical to MongoInputFormat
+	 * 
+	 * just uses old API and returns Streaming Splits instead
+	 */
 	@Override
 	public InputSplit[] getSplits(JobConf conf, int numsplits) throws IOException {
 
@@ -100,9 +106,7 @@ public class MongoStreamInputFormat implements InputFormat<Text, Text>, JobConfi
 		}
 		
 		boolean primaryOk = conf.getBoolean("mongo.input.primary_ok", false);
-		BasicDBObjectBuilder cmdBuilder = new BasicDBObjectBuilder();
-		cmdBuilder.add("isMaster", 1);
-		DBObject cmd = cmdBuilder.get();
+		
 		
 		// connect to global mongo through a mongos process
 		Mongo m = new Mongo("localhost", 27017);
@@ -116,32 +120,12 @@ public class MongoStreamInputFormat implements InputFormat<Text, Text>, JobConfi
 		for(DBObject shard : shards.find()) {
 			
 			System.out.println("adding shard" + shard.toString());
+						
+			String[] hosts = MongoInputFormat.hostsForShard((String) shard.get("host"), primaryOk);
 			
-			// parse addresses out
-			String hostString = (String) shard.get("host");
-			String[] parts = hostString.split("/");
-			String[] hosts;
-			if(parts.length > 1) { // we have replica sets
-				hosts = parts[1].split(",");
-				
-				if(!primaryOk) {
-					ArrayList<String> secondaries = new ArrayList<String>();
+			for(String h : hosts)
+				System.out.println("host:" + h);
 					
-					// determine secondaries
-					for(String host : hosts) {
-						Mongo h = new Mongo(host);
-						boolean ismaster = (Boolean)h.getDB(h.getDatabaseNames().get(0)).command(cmd).get("ismaster");
-						if(!ismaster)
-							secondaries.add(host);
-					}
-					
-					hosts = secondaries.toArray(hosts);
-				}
-			}
-			else {
-				hosts = parts[0].split(",");
-			}
-			
 			InputSplit split = new MongoStreamInputSplit(hosts);
 			splits.add(split);
 		}
@@ -153,5 +137,18 @@ public class MongoStreamInputFormat implements InputFormat<Text, Text>, JobConfi
 	@Override
 	public void configure(JobConf job) {
 		
+	}
+	
+	public static void main(String[] args) {
+		String s = "RepShard1/10.78.82.253:27018";
+		String[] parts = s.split("/");
+		String[] hosts = parts[1].split(",");
+		
+		ArrayList<String> secs = new ArrayList<String>();
+		secs.add("sdf");
+		hosts = secs.toArray(new String[0]);
+		
+		for(String h : hosts)
+			System.out.println(h);
 	}
 }
