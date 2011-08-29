@@ -15,6 +15,7 @@ import org.apache.hadoop.mapred.RecordReader;
 import org.bson.types.ObjectId;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.Bytes;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.Mongo;
@@ -77,6 +78,8 @@ public class MongoStreamRecordReader implements RecordReader<Text, Text> {
 						cursor = mongo.getDB(database).getCollection(collection).find();
 					}
 				}
+				
+				cursor.addOption(Bytes.QUERYOPTION_NOTIMEOUT);
 				
 				// thanks mongo, for this handy method
 				totalResults = cursor.count();
