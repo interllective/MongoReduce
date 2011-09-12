@@ -122,7 +122,15 @@ public class MongoStreamRecordReader implements RecordReader<Text, Text> {
 		boolean hadMore = cursor.hasNext();
 		if(hadMore) {
 			DBObject v = cursor.next();
-			key.set(((ObjectId)v.get("_id")).toString().getBytes("UTF-8"));
+			Object objID = v.get("_id");
+			try {
+				if(objID.getClass().getName().equals(Class.forName("org.bson.types.ObjectId").getName()))
+					key.set(((ObjectId)v.get("_id")).toString().getBytes("UTF-8"));
+				else 
+					key.set(objID.toString().getBytes("UTF-8"));
+			} catch (ClassNotFoundException e) {
+				throw new IOException(e);
+			}
 			
 			// remove object ID from DBObject
 			v.removeField("_id");

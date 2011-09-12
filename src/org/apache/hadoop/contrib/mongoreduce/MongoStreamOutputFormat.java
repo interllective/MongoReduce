@@ -99,17 +99,22 @@ public class MongoStreamOutputFormat implements OutputFormat<Text, Text> {
 		
 		// check for user-submitted splitPoints
 		String[] splits;
-		
+		String splitString = conf.get("mongo.output.split_points","");
 	
 		// generate our own split points if necessary
-		long max = (long)Math.pow(93.0, 5.0);
+		if(splitString.equals("")) {
+			long max = (long)Math.pow(93.0, 5.0);
 			
-		long step = max / shards.size();
-		splits = new String[shards.size() -1];
+			long step = max / shards.size();
+			splits = new String[shards.size() -1];
 			
-		// assume human readable keys
-		for(int i=0; i < shards.size() - 1; i++) {
-			splits[i] = splitPointForLong(step * (i+1));
+			// assume human readable keys
+			for(int i=0; i < shards.size() - 1; i++) {
+				splits[i] = splitPointForLong(step * (i+1));
+			}
+		}
+		else {
+			splits = splitString.split(",");
 		}
 		
 		
