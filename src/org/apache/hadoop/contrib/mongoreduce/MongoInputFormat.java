@@ -118,6 +118,7 @@ public class MongoInputFormat extends InputFormat<Text, DBObject> {
 		Mongo m = new Mongo("localhost", 27017);
 		
 		// get a list of all shards and their hosts
+		// TODO: add notification if config db not found / db is not sharded
 		DB configdb = m.getDB("config");
 		DBCollection shards = configdb.getCollection("shards");
 		
