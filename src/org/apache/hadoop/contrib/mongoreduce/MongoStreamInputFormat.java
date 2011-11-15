@@ -1,6 +1,17 @@
 /**
  * Copyright 2011 Interllective Inc.
  * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
  */
 package org.apache.hadoop.contrib.mongoreduce;
 
@@ -47,19 +58,19 @@ public class MongoStreamInputFormat implements InputFormat<Text, Text>, JobConfi
 			this.locations = locations;
 		}
 		
-		@Override
+		//@Override
 		public long getLength() throws IOException {
 			// treat all shards as equal?
 			// mongo already aggressively distributes shards uniformly
 			return 1024;  // arbitrary non zero number ...
 		}
 
-		@Override
+		//@Override
 		public String[] getLocations() throws IOException {
 			return locations;
 		}
 
-		@Override
+		//@Override
 		public void readFields(DataInput in) throws IOException {
 			int len = in.readInt();
 			locations = new String[len];
@@ -67,7 +78,7 @@ public class MongoStreamInputFormat implements InputFormat<Text, Text>, JobConfi
 				locations[i] = in.readUTF();
 		}
 
-		@Override
+		//@Override
 		public void write(DataOutput out) throws IOException {
 			out.writeInt(locations.length);
 			for(String loc : locations) 
@@ -76,7 +87,7 @@ public class MongoStreamInputFormat implements InputFormat<Text, Text>, JobConfi
 		
 	}
 	
-	@Override
+	//@Override
 	public RecordReader<Text, Text> getRecordReader(InputSplit split,
 			JobConf conf, Reporter reporter) throws IOException {
 
@@ -89,7 +100,7 @@ public class MongoStreamInputFormat implements InputFormat<Text, Text>, JobConfi
 	 * 
 	 * just uses old API and returns Streaming Splits instead
 	 */
-	@Override
+	//@Override
 	public InputSplit[] getSplits(JobConf conf, int numsplits) throws IOException {
 
 		ArrayList<InputSplit> splits = new ArrayList<InputSplit>();
@@ -134,7 +145,7 @@ public class MongoStreamInputFormat implements InputFormat<Text, Text>, JobConfi
 		return splits.toArray(ret);
 	}
 
-	@Override
+	//@Override
 	public void configure(JobConf job) {
 		
 	}
